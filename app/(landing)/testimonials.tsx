@@ -60,13 +60,13 @@ const testimonialChunks = chunkArray(testimonials, Math.ceil(testimonials.length
 export default function WallOfLoveSection() {
     return (
         <section>
-            <div className="py-16 md:py-32">
+            <div className="py-12 md:py-16">
                 <div className="mx-auto max-w-6xl px-6">
                     <div className="text-center">
                         <h2 className="text-foreground text-4xl font-semibold">Loved by the Community</h2>
-                        <p className="text-muted-foreground mb-12 mt-4 text-balance text-lg">Harum quae dolore orrupti aut temporibus ariatur.</p>
+                        <p className="text-muted-foreground mb-8 mt-4 text-balance text-lg">Harum quae dolore orrupti aut temporibus ariatur.</p>
                     </div>
-                    <div className="mt-8 grid gap-3 sm:grid-cols-2 md:mt-12 lg:grid-cols-3">
+                    <div className="mt-6 grid gap-3 sm:grid-cols-2 md:mt-8 lg:grid-cols-3">
                         {testimonialChunks.map((chunk, chunkIndex) => (
                             <div
                                 key={chunkIndex}

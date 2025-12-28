@@ -20,6 +20,9 @@ import {
   IconUsers,
   IconSparkles,
   IconBrandOpenai,
+  IconKey,
+  IconLayoutKanban,
+  IconPalette,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/app/dashboard/nav-documents"
@@ -47,9 +50,24 @@ const data = {
       icon: IconDashboard,
     },
     {
+      title: "Kanban Boards",
+      url: "/dashboard/kanban",
+      icon: IconLayoutKanban,
+    },
+    {
+      title: "Widget Customization",
+      url: "/dashboard/widget-customization",
+      icon: IconPalette,
+    },
+    {
       title: "Payment gated",
       url: "/dashboard/payment-gated",
       icon: IconSparkles,
+    },
+    {
+      title: "API Keys",
+      url: "/dashboard/api-keys",
+      icon: IconKey,
     },
   ],
   navSecondary: [

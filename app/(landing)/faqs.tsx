@@ -1,6 +1,6 @@
 export default function FAQs() {
     return (
-        <section className="scroll-py-16 py-16 md:scroll-py-32 md:py-32">
+        <section className="scroll-py-12 py-12 md:scroll-py-16 md:py-16">
             <div className="mx-auto max-w-5xl px-6">
                 <div className="grid gap-y-12 px-2 lg:[grid-template-columns:1fr_auto]">
                     <div className="text-center lg:text-left">
@@ -8,35 +8,39 @@ export default function FAQs() {
                             Frequently <br className="hidden lg:block" /> Asked <br className="hidden lg:block" />
                             Questions
                         </h2>
-                        <p>Accusantium quisquam. Illo, omnis?</p>
+                        <p>Everything you need to know about UserVibes OS</p>
                     </div>
 
                     <div className="divide-y divide-dashed sm:mx-auto sm:max-w-lg lg:mx-0">
                         <div className="pb-6">
-                            <h3 className="font-medium">What is the refund policy?</h3>
-                            <p className="text-muted-foreground mt-4">We offer a 30-day money back guarantee. If you are not satisfied with our product, you can request a refund within 30 days of your purchase.</p>
+                            <h3 className="font-medium">What is UserVibes OS?</h3>
+                            <p className="text-muted-foreground mt-4">UserVibes OS is a comprehensive user feedback platform designed to capture user signals throughout their entire journey. We're launching with feature request management, allowing you to collect, prioritize, and act on user ideas.</p>
 
-                            <ol className="list-outside list-decimal space-y-2 pl-4">
-                                <li className="text-muted-foreground mt-4">To request a refund, please contact our support team with your order number and reason for the refund.</li>
-                                <li className="text-muted-foreground mt-4">Refunds will be processed within 3-5 business days.</li>
-                                <li className="text-muted-foreground mt-4">Please note that refunds are only available for new customers and are limited to one per customer.</li>
-                            </ol>
-                        </div>
-                        <div className="py-6">
-                            <h3 className="font-medium">How do I cancel my subscription?</h3>
-                            <p className="text-muted-foreground mt-4">You can cancel your subscription at any time by logging into your account and clicking on the cancel button.</p>
-                        </div>
-                        <div className="py-6">
-                            <h3 className="font-medium">Can I upgrade my plan?</h3>
-                            <p className="text-muted-foreground my-4">Yes, you can upgrade your plan at any time by logging into your account and selecting the plan you want to upgrade to.</p>
                             <ul className="list-outside list-disc space-y-2 pl-4">
-                                <li className="text-muted-foreground">You will be charged the difference in price between your current plan and the plan you are upgrading to.</li>
-                                <li className="text-muted-foreground">Your new plan will take effect immediately and you will be billed at the new rate on your next billing cycle.</li>
+                                <li className="text-muted-foreground mt-4"><strong>Attract & Qualify:</strong> Landing page funnels and surveys</li>
+                                <li className="text-muted-foreground">🎯 <strong>Ideate & Resolve:</strong> Feature requests and bug reports (Available Now)</li>
+                                <li className="text-muted-foreground mt-4"><strong>Measure & Amplify:</strong> Sentiment surveys and testimonials</li>
+                                <li className="text-muted-foreground mt-4"><strong>Nurture & Recapture:</strong> Email campaigns and exit feedback</li>
                             </ul>
                         </div>
                         <div className="py-6">
-                            <h3 className="font-medium">Do you offer phone support?</h3>
-                            <p className="text-muted-foreground mt-4">We do not offer phone support at this time. However, you can contact us via email or live chat for any questions or concerns you may have.</p>
+                            <h3 className="font-medium">How does feature request voting work?</h3>
+                            <p className="text-muted-foreground mt-4">Users can submit feature requests and upvote ideas they care about. This helps you identify which features to prioritize based on real user demand, not just gut feelings. Each user can vote on multiple features, and the system tracks engagement to surface the most requested improvements.</p>
+                        </div>
+                        <div className="py-6">
+                            <h3 className="font-medium">What features are coming next?</h3>
+                            <p className="text-muted-foreground my-4">We're building UserVibes OS as a complete feedback ecosystem. After feature requests, we'll be rolling out:</p>
+                            <ul className="list-outside list-disc space-y-2 pl-4">
+                                <li className="text-muted-foreground">Bug reporting and issue tracking</li>
+                                <li className="text-muted-foreground">Sentiment surveys and NPS scoring</li>
+                                <li className="text-muted-foreground">Testimonial collection and display</li>
+                                <li className="text-muted-foreground">Email nurture campaigns</li>
+                                <li className="text-muted-foreground">Exit feedback and win-back flows</li>
+                            </ul>
+                        </div>
+                        <div className="py-6">
+                            <h3 className="font-medium">Is UserVibes OS free to use?</h3>
+                            <p className="text-muted-foreground mt-4">Yes! We offer a generous free tier to help you get started with collecting feature requests. As we add more functionality to the UserVibes OS platform, we'll introduce paid plans with advanced features like custom branding, analytics, and integrations.</p>
                         </div>
                     </div>
                 </div>
