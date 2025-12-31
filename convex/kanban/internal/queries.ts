@@ -2,51 +2,21 @@ import { v } from "convex/values";
 import { internalQuery } from "../../_generated/server";
 
 /**
- * Get a widget user by email (scoped to API key owner)
- * Used for checking if user exists during registration/login
+ * Get votes for a user on a specific board
+ * Used to show which items the user has already voted on
  */
-export const getUserByEmail = internalQuery({
+export const getUserVotesForBoard = internalQuery({
   args: {
-    email: v.string(),
-    apiKeyUserId: v.string(),
+    clerkUserId: v.string(),
+    boardId: v.id("kanbanBoards"),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("widgetUsers")
-      .withIndex("byEmailAndApiKeyUserId", (q) =>
-        q.eq("email", args.email).eq("apiKeyUserId", args.apiKeyUserId)
-      )
-      .first();
+    const votes = await ctx.db
+      .query("kanbanVotes")
+      .withIndex("byClerkUserId", (q) => q.eq("clerkUserId", args.clerkUserId))
+      .filter((q) => q.eq(q.field("boardId"), args.boardId))
+      .collect();
 
-    return user;
-  },
-});
-
-/**
- * Get a widget user by ID
- */
-export const getUserById = internalQuery({
-  args: {
-    userId: v.id("widgetUsers"),
-  },
-  handler: async (ctx, args) => {
-    return await ctx.db.get(args.userId);
-  },
-});
-
-/**
- * Get a session by token hash
- */
-export const getSessionByTokenHash = internalQuery({
-  args: {
-    tokenHash: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const session = await ctx.db
-      .query("widgetSessions")
-      .withIndex("byTokenHash", (q) => q.eq("tokenHash", args.tokenHash))
-      .first();
-
-    return session;
+    return votes.map((v) => v.itemId);
   },
 });

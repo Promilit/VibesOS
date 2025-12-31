@@ -28,19 +28,6 @@ export default defineSchema({
       .index("byKeyHash", ["keyHash"])
       .index("byKeyPrefix", ["keyPrefix"]),
 
-    // Widget end-user accounts (separate from Clerk admin users)
-    widgetUsers: defineTable({
-      email: v.string(),
-      passwordHash: v.string(),
-      displayName: v.string(),
-      apiKeyUserId: v.string(), // Links to the customer who owns the widget (Clerk user ID)
-      emailVerified: v.boolean(),
-      verificationToken: v.optional(v.string()),
-      createdAt: v.number(),
-    })
-      .index("byEmail", ["email"])
-      .index("byApiKeyUserId", ["apiKeyUserId"])
-      .index("byEmailAndApiKeyUserId", ["email", "apiKeyUserId"]),
 
     // Board definitions (3 boards per customer: Feature Requests, Bug Reports, Internal Roadmap)
     kanbanBoards: defineTable({
@@ -73,8 +60,8 @@ export default defineSchema({
       columnId: v.id("kanbanColumns"),
       title: v.string(),
       description: v.optional(v.string()),
-      createdByUserId: v.optional(v.id("widgetUsers")), // null if created by admin
-      createdByAdminId: v.optional(v.string()), // Clerk user ID if admin created
+      createdByUserId: v.optional(v.string()), // Clerk user ID (null if created by admin via dashboard)
+      createdByAdminId: v.optional(v.string()), // Clerk user ID if admin created via dashboard
       position: v.number(), // Fractional indexing for drag ordering
       voteCount: v.number(), // Denormalized for performance
       status: v.union(
@@ -94,25 +81,14 @@ export default defineSchema({
     // Votes on items
     kanbanVotes: defineTable({
       itemId: v.id("kanbanItems"),
-      userId: v.id("widgetUsers"),
+      clerkUserId: v.string(), // Clerk user ID who voted
       boardId: v.id("kanbanBoards"), // For efficient querying
       createdAt: v.number(),
     })
       .index("byItemId", ["itemId"])
-      .index("byUserId", ["userId"])
-      .index("byItemIdAndUserId", ["itemId", "userId"]) // Ensure one vote per user per item
+      .index("byClerkUserId", ["clerkUserId"])
+      .index("byItemIdAndClerkUserId", ["itemId", "clerkUserId"]) // Ensure one vote per user per item
       .index("byBoardId", ["boardId"]),
-
-    // Widget sessions (for JWT-based auth)
-    widgetSessions: defineTable({
-      userId: v.id("widgetUsers"),
-      tokenHash: v.string(), // SHA-256 hash of JWT token
-      expiresAt: v.number(),
-      createdAt: v.number(),
-    })
-      .index("byTokenHash", ["tokenHash"])
-      .index("byUserId", ["userId"])
-      .index("byExpiresAt", ["expiresAt"]), // For cleanup cron
 
     // Widget customization (branding, colors, fonts)
     widgetCustomization: defineTable({

@@ -1,0 +1,506 @@
+/* UserVibes Kanban Widget Styles */
+/* All styles are scoped to the widget container */
+
+.uv-widget {
+  /* CSS Variables for theming - can be overridden by customization */
+  --uv-primary: #3b82f6;
+  --uv-secondary: #64748b;
+  --uv-background: #ffffff;
+  --uv-card-background: #f8fafc;
+  --uv-text: #0f172a;
+  --uv-border: #e2e8f0;
+  --uv-font-family: Inter, system-ui, -apple-system, sans-serif;
+  --uv-font-size: 14px;
+  --uv-heading-font-family: var(--uv-font-family);
+  --uv-border-radius: 8px;
+  --uv-spacing: 16px;
+
+  /* Widget container styles */
+  font-family: var(--uv-font-family);
+  font-size: var(--uv-font-size);
+  color: var(--uv-text);
+  background-color: var(--uv-background);
+  border: 1px solid var(--uv-border);
+  border-radius: var(--uv-border-radius);
+  overflow: hidden;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+
+.uv-widget *,
+.uv-widget *::before,
+.uv-widget *::after {
+  box-sizing: border-box;
+}
+
+/* Dark theme */
+.uv-widget[data-theme="dark"] {
+  --uv-primary: #60a5fa;
+  --uv-secondary: #94a3b8;
+  --uv-background: #0f172a;
+  --uv-card-background: #1e293b;
+  --uv-text: #f8fafc;
+  --uv-border: #334155;
+}
+
+/* Header */
+.uv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--uv-spacing);
+  border-bottom: 1px solid var(--uv-border);
+}
+
+.uv-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.uv-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.uv-title {
+  font-family: var(--uv-heading-font-family);
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.uv-user-menu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Tabs */
+.uv-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px var(--uv-spacing);
+  border-bottom: 1px solid var(--uv-border);
+  overflow-x: auto;
+}
+
+.uv-tab {
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  border-radius: var(--uv-border-radius);
+  color: var(--uv-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.uv-tab:hover {
+  background-color: var(--uv-card-background);
+}
+
+.uv-tab[data-active="true"] {
+  background-color: var(--uv-primary);
+  color: #ffffff;
+}
+
+/* Content area */
+.uv-content {
+  padding: var(--uv-spacing);
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* Card list */
+.uv-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Card */
+.uv-card {
+  background-color: var(--uv-card-background);
+  border: 1px solid var(--uv-border);
+  border-radius: var(--uv-border-radius);
+  padding: var(--uv-spacing);
+  transition: box-shadow 0.2s;
+}
+
+.uv-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.uv-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.uv-card-content {
+  flex: 1;
+}
+
+.uv-card-title {
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  font-size: 0.9375rem;
+}
+
+.uv-card-description {
+  color: var(--uv-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.uv-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Vote button */
+.uv-vote-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 12px;
+  background-color: color-mix(in srgb, var(--uv-primary) 15%, transparent);
+  border: none;
+  border-radius: var(--uv-border-radius);
+  color: var(--uv-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 48px;
+}
+
+.uv-vote-btn:hover {
+  background-color: color-mix(in srgb, var(--uv-primary) 25%, transparent);
+}
+
+.uv-vote-btn[data-voted="true"] {
+  background-color: var(--uv-primary);
+  color: #ffffff;
+}
+
+.uv-vote-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.uv-vote-count {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Badge */
+.uv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+  background-color: var(--uv-card-background);
+  border: 1px solid var(--uv-border);
+}
+
+.uv-badge-status {
+  background-color: color-mix(in srgb, var(--uv-secondary) 20%, transparent);
+  border-color: transparent;
+}
+
+/* Add button */
+.uv-add-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: var(--uv-primary);
+  border: none;
+  border-radius: var(--uv-border-radius);
+  color: #ffffff;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.uv-add-btn:hover {
+  opacity: 0.9;
+}
+
+.uv-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Footer */
+.uv-footer {
+  padding: 12px var(--uv-spacing);
+  border-top: 1px solid var(--uv-border);
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--uv-secondary);
+}
+
+/* Auth forms */
+.uv-auth-container {
+  padding: calc(var(--uv-spacing) * 2);
+  text-align: center;
+}
+
+.uv-auth-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.uv-auth-subtitle {
+  color: var(--uv-secondary);
+  margin: 0 0 24px 0;
+  font-size: 0.875rem;
+}
+
+.uv-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.uv-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.uv-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.uv-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 0.875rem;
+  background-color: var(--uv-background);
+  border: 1px solid var(--uv-border);
+  border-radius: var(--uv-border-radius);
+  color: var(--uv-text);
+  transition: border-color 0.2s;
+}
+
+.uv-input:focus {
+  outline: none;
+  border-color: var(--uv-primary);
+}
+
+.uv-input::placeholder {
+  color: var(--uv-secondary);
+}
+
+.uv-submit-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: var(--uv-primary);
+  border: none;
+  border-radius: var(--uv-border-radius);
+  color: #ffffff;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.uv-submit-btn:hover {
+  opacity: 0.9;
+}
+
+.uv-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.uv-secondary-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: transparent;
+  border: 1px solid var(--uv-border);
+  border-radius: var(--uv-border-radius);
+  color: var(--uv-text);
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.uv-secondary-btn:hover {
+  background-color: var(--uv-card-background);
+  border-color: var(--uv-secondary);
+}
+
+.uv-secondary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.uv-auth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.uv-auth-switch {
+  margin-top: 16px;
+  font-size: 0.875rem;
+  color: var(--uv-secondary);
+}
+
+.uv-auth-link {
+  color: var(--uv-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.uv-error {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 8px;
+}
+
+/* Loading state */
+.uv-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--uv-spacing) * 3);
+}
+
+.uv-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--uv-border);
+  border-top-color: var(--uv-primary);
+  border-radius: 50%;
+  animation: uv-spin 0.8s linear infinite;
+}
+
+@keyframes uv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Empty state */
+.uv-empty {
+  text-align: center;
+  padding: calc(var(--uv-spacing) * 2);
+  color: var(--uv-secondary);
+}
+
+.uv-empty-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+/* Modal/Dialog */
+.uv-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.uv-modal {
+  background-color: var(--uv-background);
+  border-radius: var(--uv-border-radius);
+  padding: var(--uv-spacing);
+  width: 90%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.uv-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.uv-modal-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.uv-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--uv-secondary);
+  padding: 0;
+  line-height: 1;
+}
+
+/* Textarea */
+.uv-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  background-color: var(--uv-background);
+  border: 1px solid var(--uv-border);
+  border-radius: var(--uv-border-radius);
+  color: var(--uv-text);
+  resize: vertical;
+  min-height: 80px;
+}
+
+.uv-textarea:focus {
+  outline: none;
+  border-color: var(--uv-primary);
+}
+
+/* Status column indicator */
+.uv-status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.uv-status-indicator[data-status="backlog"] {
+  background-color: #94a3b8;
+}
+
+.uv-status-indicator[data-status="in-progress"] {
+  background-color: #f59e0b;
+}
+
+.uv-status-indicator[data-status="review"] {
+  background-color: #8b5cf6;
+}
+
+.uv-status-indicator[data-status="done"] {
+  background-color: #22c55e;
+}

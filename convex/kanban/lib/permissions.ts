@@ -46,30 +46,30 @@ export async function verifyBoardOwnership(
 }
 
 /**
- * Check if an item belongs to the given widget user
+ * Check if an item belongs to the given Clerk user
  * Returns true if user owns the item
  */
 export async function checkItemOwnership(
   ctx: QueryCtx | MutationCtx,
   itemId: Id<"kanbanItems">,
-  widgetUserId: Id<"widgetUsers">
+  clerkUserId: string
 ): Promise<boolean> {
   const item = await ctx.db.get(itemId);
   if (!item) {
     throw new Error("Item not found");
   }
-  return item.createdByUserId === widgetUserId;
+  return item.createdByUserId === clerkUserId;
 }
 
 /**
- * Require that a widget user owns an item (throws if not)
+ * Require that a Clerk user owns an item (throws if not)
  */
 export async function requireItemOwnership(
   ctx: QueryCtx | MutationCtx,
   itemId: Id<"kanbanItems">,
-  widgetUserId: Id<"widgetUsers">
+  clerkUserId: string
 ): Promise<void> {
-  const isOwner = await checkItemOwnership(ctx, itemId, widgetUserId);
+  const isOwner = await checkItemOwnership(ctx, itemId, clerkUserId);
   if (!isOwner) {
     throw new Error("Unauthorized: You can only modify your own items");
   }
@@ -82,7 +82,7 @@ export async function requireItemOwnership(
 export async function checkCanVote(
   ctx: QueryCtx | MutationCtx,
   itemId: Id<"kanbanItems">,
-  widgetUserId: Id<"widgetUsers">
+  clerkUserId: string
 ): Promise<string | null> {
   const item = await ctx.db.get(itemId);
   if (!item) {
@@ -90,15 +90,15 @@ export async function checkCanVote(
   }
 
   // Cannot vote on own items
-  if (item.createdByUserId === widgetUserId) {
+  if (item.createdByUserId === clerkUserId) {
     return "Cannot vote on your own item";
   }
 
-  // Check if already voted
+  // Check if already voted using the new index
   const existingVote = await ctx.db
     .query("kanbanVotes")
-    .withIndex("byItemIdAndUserId", (q) =>
-      q.eq("itemId", itemId).eq("userId", widgetUserId)
+    .withIndex("byItemIdAndClerkUserId", (q) =>
+      q.eq("itemId", itemId).eq("clerkUserId", clerkUserId)
     )
     .first();
 

@@ -120,28 +120,25 @@ export const getItem = query({
       .withIndex("byItemId", (q) => q.eq("itemId", args.itemId))
       .collect();
 
-    // Get voter information
-    const votersWithDetails = await Promise.all(
-      votes.map(async (vote) => {
-        const user = await ctx.db.get(vote.userId);
-        return {
-          voteId: vote._id,
-          userId: vote.userId,
-          displayName: user?.displayName || "Unknown User",
-          email: user?.email || "",
-          createdAt: vote.createdAt,
-        };
-      })
-    );
+    // Get voter information (now using Clerk user IDs)
+    const votersWithDetails = votes.map((vote) => ({
+      voteId: vote._id,
+      clerkUserId: vote.clerkUserId,
+      createdAt: vote.createdAt,
+    }));
 
-    // Get creator information
+    // Get creator information (now using Clerk user ID)
     let creatorInfo = null;
     if (item.createdByUserId) {
-      const creator = await ctx.db.get(item.createdByUserId);
+      // Look up the Clerk user from the users table
+      const creator = await ctx.db
+        .query("users")
+        .withIndex("byExternalId", (q) => q.eq("externalId", item.createdByUserId as string))
+        .first();
       if (creator) {
         creatorInfo = {
-          displayName: creator.displayName,
-          email: creator.email,
+          displayName: creator.name,
+          clerkUserId: item.createdByUserId,
         };
       }
     }
@@ -266,7 +263,7 @@ export const getStats = query({
 
     let totalItems = 0;
     let totalVotes = 0;
-    let itemsByStatus = {
+    const itemsByStatus = {
       backlog: 0,
       "in-progress": 0,
       review: 0,
@@ -287,17 +284,23 @@ export const getStats = query({
       }
     }
 
-    // Get widget user count
-    const widgetUsers = await ctx.db
-      .query("widgetUsers")
-      .withIndex("byApiKeyUserId", (q) => q.eq("apiKeyUserId", adminUserId))
-      .collect();
+    // Note: Widget users now use Clerk, so we count unique voters instead
+    const uniqueVoters = new Set<string>();
+    for (const boardId of boardIds) {
+      const votes = await ctx.db
+        .query("kanbanVotes")
+        .withIndex("byBoardId", (q) => q.eq("boardId", boardId))
+        .collect();
+      for (const vote of votes) {
+        uniqueVoters.add(vote.clerkUserId);
+      }
+    }
 
     return {
       totalBoards: boards.length,
       totalItems,
       totalVotes,
-      totalWidgetUsers: widgetUsers.length,
+      totalWidgetUsers: uniqueVoters.size,
       itemsByStatus,
     };
   },

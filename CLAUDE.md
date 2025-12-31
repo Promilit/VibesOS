@@ -1,5 +1,5 @@
 See @.cursor/rules/convex_rules.mdc for Convex guidelines.
-
+See @.cursor/rules/convex_llms.txt for Convex LLM guidelines.
 
 Security architecture is implemented through specialized skills at .claude/skills/security/:
 

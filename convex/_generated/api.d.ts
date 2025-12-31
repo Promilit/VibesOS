@@ -23,7 +23,7 @@ import type * as kanban_internal_queries from "../kanban/internal/queries.js";
 import type * as kanban_lib_auth from "../kanban/lib/auth.js";
 import type * as kanban_lib_permissions from "../kanban/lib/permissions.js";
 import type * as kanban_lib_positions from "../kanban/lib/positions.js";
-import type * as kanban_widget_actions from "../kanban/widget/actions.js";
+import type * as kanban_widget_mutations from "../kanban/widget/mutations.js";
 import type * as kanban_widget_queries from "../kanban/widget/queries.js";
 import type * as paymentAttemptTypes from "../paymentAttemptTypes.js";
 import type * as paymentAttempts from "../paymentAttempts.js";
@@ -48,7 +48,7 @@ declare const fullApi: ApiFromModules<{
   "kanban/lib/auth": typeof kanban_lib_auth;
   "kanban/lib/permissions": typeof kanban_lib_permissions;
   "kanban/lib/positions": typeof kanban_lib_positions;
-  "kanban/widget/actions": typeof kanban_widget_actions;
+  "kanban/widget/mutations": typeof kanban_widget_mutations;
   "kanban/widget/queries": typeof kanban_widget_queries;
   paymentAttemptTypes: typeof paymentAttemptTypes;
   paymentAttempts: typeof paymentAttempts;

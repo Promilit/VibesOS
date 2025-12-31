@@ -16,7 +16,7 @@ interface Item {
   position: number;
   status: "backlog" | "in-progress" | "review" | "done";
   createdAt: number;
-  createdByUserId?: Id<"widgetUsers">;
+  createdByUserId?: string; // Clerk user ID
   createdByAdminId?: string;
 }
 

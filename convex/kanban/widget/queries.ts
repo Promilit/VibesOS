@@ -116,37 +116,47 @@ export const getItems = query({
 /**
  * Get user's votes for a board
  * Returns array of item IDs the user has voted on
+ * Uses Clerk authentication
  */
 export const getUserVotes = query({
   args: {
-    sessionToken: v.string(),
+    apiKeyHash: v.string(),
     boardId: v.id("kanbanBoards"),
   },
   handler: async (ctx, args): Promise<Id<"kanbanItems">[]> => {
-    // Verify session
-    const session = await ctx.db
-      .query("widgetSessions")
-      .withIndex("byTokenHash", (q) => q.eq("tokenHash", args.sessionToken))
-      .first();
-
-    if (!session) {
-      throw new Error("Invalid session");
+    // Get authenticated user from Clerk
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return []; // Not authenticated, no votes
     }
 
-    if (session.expiresAt < Date.now()) {
-      throw new Error("Session has expired");
+    const clerkUserId = identity.subject;
+
+    // Verify API key
+    const apiKey = await ctx.db
+      .query("apiKeys")
+      .withIndex("byKeyHash", (q) => q.eq("keyHash", args.apiKeyHash))
+      .first();
+
+    if (!apiKey || !apiKey.isActive) {
+      throw new Error("Invalid or inactive API key");
+    }
+
+    // Verify board belongs to this API key owner
+    const board = await ctx.db.get(args.boardId);
+    if (!board || board.apiKeyUserId !== apiKey.userId) {
+      throw new Error("Board not found or access denied");
     }
 
     // Get votes for this user on this board
     const votes = await ctx.db
       .query("kanbanVotes")
-      .withIndex("byBoardId", (q) => q.eq("boardId", args.boardId))
+      .withIndex("byItemIdAndClerkUserId")
+      .filter((q) => q.eq(q.field("clerkUserId"), clerkUserId))
+      .filter((q) => q.eq(q.field("boardId"), args.boardId))
       .collect();
 
-    // Filter to user's votes
-    const userVotes = votes.filter((vote) => vote.userId === session.userId);
-
-    return userVotes.map((vote) => vote.itemId);
+    return votes.map((vote) => vote.itemId);
   },
 });
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Building a multi-tenant, embeddable Kanban widget with 3 boards (Feature Requests, Bug Reports, Internal Roadmap), dual authentication (admin via Clerk, end-users via custom auth), real-time updates, full customization (colors, branding, fonts), and multiple distribution methods (iframe, web component, NPM, CDN).
+Building a multi-tenant, embeddable Kanban widget with 3 boards (Feature Requests, Bug Reports, Internal Roadmap), unified Clerk authentication for all users, real-time updates, full customization (colors, branding, fonts), and multiple distribution methods (iframe, web component, NPM, CDN).
 
 ## User Requirements Summary
 
@@ -11,7 +11,7 @@ Building a multi-tenant, embeddable Kanban widget with 3 boards (Feature Request
 - **Permissions**:
   - End users: Add to Backlog, edit/delete own items, vote on others' items, view all boards (no drag)
   - Admins: Full CRUD, drag between columns, manage from dashboard
-- **Authentication**: End users must create accounts (not Clerk - separate auth system)
+- **Authentication**: All users (admins and end users) authenticate via Clerk
 - **Distribution**: iframe, web component, NPM package, CDN script
 - **API Key Integration**: Uses existing API key system to scope data per customer
 - **Customization**: Full widget customization (colors, branding, fonts) per customer
@@ -21,19 +21,20 @@ Building a multi-tenant, embeddable Kanban widget with 3 boards (Feature Request
 
 ### 1. End-User Authentication Strategy
 
-**Chosen Approach**: Custom JWT-based authentication with email/password
+**Chosen Approach**: Clerk authentication for all users (admins and end users)
 
 **Why**:
-- Clerk is expensive for high-volume end-users
-- Widget users don't need full account management
-- Simpler integration for embedded contexts
-- Can be extended later (OAuth, magic links)
+- Unified authentication experience
+- No custom JWT handling or password management needed
+- Built-in security features (rate limiting, email verification, social login)
+- Clerk handles all session management
+- Simpler architecture with less code to maintain
 
 **Implementation**:
-- Store widget users in `widgetUsers` table (scoped by `apiKeyUserId`)
-- Password hashing with bcrypt in Node.js action
-- JWT tokens (7-day expiry) stored in `widgetSessions` table
-- Email verification optional for MVP
+- All users stored in Clerk and synced to Convex `users` table
+- Widget uses `@clerk/clerk-js` for vanilla JS integration
+- API key still used for multi-tenant data scoping
+- Convex auth integration validates Clerk tokens automatically
 
 ### 2. Widget Distribution Strategy
 
@@ -85,12 +86,11 @@ Building a multi-tenant, embeddable Kanban widget with 3 boards (Feature Request
 ## Database Schema
 
 See full schema in plan including:
-- `widgetUsers` - End user accounts
+- `users` - All users (synced from Clerk)
 - `kanbanBoards` - 3 boards per customer
 - `kanbanColumns` - 4 columns per board
 - `kanbanItems` - Cards with voting, ownership
-- `kanbanVotes` - Vote tracking
-- `widgetSessions` - JWT session management
+- `kanbanVotes` - Vote tracking (references Clerk user IDs)
 - **`widgetCustomization`** - Colors, branding, fonts, custom CSS
 
 ## Dashboard Features
@@ -126,7 +126,7 @@ See full schema in plan including:
 
 ### For End Users
 - View all 3 boards (Feature Requests, Bug Reports, Internal Roadmap)
-- Register/login with email and password
+- Sign in via Clerk (email, social login, etc.)
 - Add items to Backlog column only
 - Edit and delete their own items
 - Vote on other users' items (not their own)
@@ -169,13 +169,12 @@ See full schema in plan including:
 ## Security Highlights
 
 - **API Key Validation**: SHA-256 hashing, verified on every request
-- **Password Security**: bcrypt hashing with cost factor 12
-- **Session Management**: JWT tokens with 7-day expiry, hashed before storage
+- **Authentication**: Clerk handles all auth security (passwords, sessions, MFA)
 - **Permission Enforcement**: User can only modify own items, vote on others'
 - **XSS Prevention**: Input sanitization, React's built-in protection, CSP headers
 - **Custom CSS Sanitization**: Strip dangerous properties and scripts
 - **CORS Configuration**: Proper headers for cross-origin widget embedding
-- **Rate Limiting**: Per API key and IP-based limits
+- **Rate Limiting**: Per API key and IP-based limits (Clerk handles auth rate limiting)
 
 ## Implementation Timeline
 
@@ -212,7 +211,7 @@ See full schema in plan including:
 
 - **Frontend**: Next.js 15, React 19, TypeScript
 - **Backend**: Convex (real-time database)
-- **Auth**: Clerk (admin), Custom JWT (end users)
+- **Auth**: Clerk (all users - admins and end users)
 - **Drag-and-Drop**: @dnd-kit
 - **Styling**: Tailwind CSS, CSS Variables
 - **UI Components**: Radix UI, shadcn/ui

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +14,7 @@ import { EmbedInstructions } from "./embed-instructions";
 import { CreateItemDialog } from "./create-item-dialog";
 
 export default function KanbanPage() {
-  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
+  const [selectedBoardId, setSelectedBoardId] = useState<Id<"kanbanBoards"> | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   // Check if boards are initialized
@@ -128,7 +129,7 @@ export default function KanbanPage() {
 
       <EmbedInstructions />
 
-      <Tabs value={selectedBoardId || ""} onValueChange={setSelectedBoardId}>
+      <Tabs value={selectedBoardId || ""} onValueChange={(value) => setSelectedBoardId(value as Id<"kanbanBoards">)}>
         <TabsList className="grid w-full grid-cols-3">
           {boards.map((board) => (
             <TabsTrigger key={board._id} value={board._id}>

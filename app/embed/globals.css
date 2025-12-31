@@ -1,0 +1,14 @@
+/* Embed-specific global styles */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Ensure the widget fills the viewport */
+uservibes-kanban {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+}

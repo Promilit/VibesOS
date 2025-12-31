@@ -51,7 +51,8 @@ function ApiKeysCard() {
   } | null>(null);
 
   const apiKeys = useQuery(api.apiKeys.getUserApiKeys);
-  const createApiKey = useAction(api.apiKeysActions.createApiKey);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const createApiKey = useAction((api as any).apiKeysActions.createApiKey);
   const deleteApiKey = useMutation(api.apiKeys.deleteApiKey);
   const revokeApiKey = useMutation(api.apiKeys.revokeApiKey);
 

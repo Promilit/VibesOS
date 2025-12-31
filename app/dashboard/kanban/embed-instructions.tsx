@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,14 @@ export function EmbedInstructions() {
   const apiKeys = useQuery(api.apiKeys.getUserApiKeys);
   const apiKey = apiKeys && apiKeys.length > 0 ? apiKeys[0].keyPrefix + "..." : "your-api-key";
 
+  // Get the base URL for embed links
+  const baseUrl = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return window.location.origin;
+    }
+    return "https://your-domain.com";
+  }, []);
+
   const handleCopy = (text: string, index: number) => {
     navigator.clipboard.writeText(text);
     setCopiedIndex(index);
@@ -31,17 +39,18 @@ export function EmbedInstructions() {
     {
       name: "Web Component",
       description: "Easiest way to embed - just paste this HTML",
-      code: `<script src="https://cdn.uservibes.com/widget/v1/uservibes-widget.umd.js"></script>
+      code: `<script src="${baseUrl}/widget/uservibes-widget.umd.js"></script>
 <uservibes-kanban api-key="${apiKey}" theme="light"></uservibes-kanban>`,
     },
     {
       name: "iframe",
       description: "Maximum isolation with iframe",
       code: `<iframe
-  src="https://widget.uservibes.com/embed?apiKey=${apiKey}"
+  src="${baseUrl}/embed?apiKey=${apiKey}&theme=light"
   width="100%"
   height="800px"
-  frameborder="0">
+  frameborder="0"
+  allow="clipboard-write">
 </iframe>`,
     },
     {
@@ -59,7 +68,7 @@ import { KanbanWidget } from '@uservibes/kanban-widget';
       name: "Script Tag",
       description: "Initialize with JavaScript",
       code: `<div id="kanban-widget"></div>
-<script src="https://cdn.uservibes.com/widget/v1/uservibes-widget.umd.js"></script>
+<script src="${baseUrl}/widget/uservibes-widget.umd.js"></script>
 <script>
   UserVibes.init({
     apiKey: '${apiKey}',
