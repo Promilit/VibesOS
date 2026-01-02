@@ -114,11 +114,11 @@ npx convex run migrations/kanbanToProjects:rollbackMigration
 - Delete: `app/dashboard/kanban/*`
 - Delete: `app/dashboard/widget-customization/*`
 
-### Phase 4: Update Widget (IN PROGRESS)
+### Phase 4: Update Widget & Preview (COMPLETED ✓)
 
-**Status**: Partially complete
+**Status**: Complete
 
-**Completed**:
+**Widget Components**:
 - ✅ Created `widget/src/lib/dom.ts` - DOM utilities
 - ✅ Created `widget/src/components/BoardList.ts` - Board selection component
 - ✅ Created `widget/src/components/BoardView.ts` - Kanban board display
@@ -127,18 +127,45 @@ npx convex run migrations/kanbanToProjects:rollbackMigration
 - ✅ Implemented per-project customization loading
 - ✅ Added backward compatibility aliases (`getBoards()` → `getProjects()`)
 
-**Remaining Tasks**:
-- [ ] Test widget with new backend (widget preview)
-- [ ] Verify board selection works correctly
+**Widget Preview System**:
+- ✅ Created `/app/widget-preview/page.tsx` - Full preview page
+- ✅ Added iframe embedding support in middleware
+- ✅ Preview applies ALL customization settings:
+  - **Colors**: Primary, secondary, background, card background, text, border (light & dark modes)
+  - **Branding**: Logo URL, company name, widget title
+  - **Typography**: Font family, heading font family, font size
+  - **Layout**: Border radius, spacing
+  - **Advanced**: Custom CSS injection
+- ✅ Preview modal in embed-section.tsx (95vw x 95vh, nearly full screen)
+
+**Key Implementation Details**:
+
+1. **Middleware Update** (`middleware.ts`):
+   - Added `/widget-preview(.*)` to `isEmbedRoute` matcher
+   - This allows the preview to be loaded in iframes (removes X-Frame-Options: DENY)
+
+2. **Widget Preview Page** (`app/widget-preview/page.tsx`):
+   - Fetches project boards via `api.projects.admin.queries.getProjectBoards`
+   - Fetches customization via `api.projects.admin.queries.getCustomization`
+   - Computes styles from customization with sensible defaults
+   - Supports `?theme=dark` query param for dark mode preview
+   - Shows branding header when logo/company name/widget title are set
+   - Grid layout adapts to number of columns (max 4)
+   - Custom CSS is injected via `<style>` tag
+
+3. **Preview Dialog** (`embed-section.tsx`):
+   - Uses shadcn Dialog component
+   - Nearly full screen: `max-w-[95vw] w-[95vw] h-[95vh]`
+   - Loads preview via iframe: `/widget-preview?projectId=${projectId}`
 
 **File Changes**:
 - ✅ Created: `widget/src/lib/dom.ts`
 - ✅ Created: `widget/src/components/BoardList.ts`
 - ✅ Created: `widget/src/components/BoardView.ts`
 - ✅ Updated: `widget/src/lib/api.ts`
-  - Renamed: `getBoards()` → `getProjects()` (with backward compat alias)
-  - Updated: Uses actions instead of queries for tracking
-  - Added: `getProjectCustomization(projectId)`
+- ✅ Updated: `middleware.ts` - Added widget-preview to embed routes
+- ✅ Created: `app/widget-preview/page.tsx` - Full customization preview
+- ✅ Updated: `app/dashboard/projects/[projectId]/components/embed-section.tsx` - Preview dialog
 
 ### Phase 5: Add Comments System (PENDING)
 
@@ -327,7 +354,7 @@ npx convex run migrations/kanbanToProjects:migrateKanbanToProjects
 - **Phase 1**: Backend Migration - ✅ COMPLETE
 - **Phase 2**: Data Migration - ⏳ READY TO RUN
 - **Phase 3**: Dashboard UI - 🔄 IN PROGRESS (API key linking complete)
-- **Phase 4**: Widget Updates - 🔄 IN PROGRESS (components created)
+- **Phase 4**: Widget & Preview - ✅ COMPLETE (widget components + preview system)
 - **Phase 5**: Comments - 📅 Upcoming
 - **Phase 6**: Analytics - 📅 Upcoming
 - **Phase 7**: Testing & Cleanup - 📅 Final

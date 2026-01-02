@@ -1,10 +1,11 @@
 // @ts-nocheck
 import { v } from "convex/values";
-import { mutation } from "../../_generated/server";
+import { mutation, query } from "../../_generated/server";
 import { verifyProjectOwnership, verifyCommentOwnership, isProjectAdmin } from "../lib/permissions";
 
 /**
  * Create a comment on an item (admin only)
+ * All comments start as "pending" and require admin approval
  */
 export const createComment = mutation({
   args: {
@@ -42,7 +43,7 @@ export const createComment = mutation({
 
     const now = Date.now();
 
-    // Create the comment
+    // Create the comment - starts as pending, requires admin approval
     const commentId = await ctx.db.insert("projectComments", {
       itemId: args.itemId,
       projectId: item.projectId,
@@ -51,17 +52,118 @@ export const createComment = mutation({
       content: args.content,
       parentCommentId: args.parentCommentId,
       isDeleted: false,
+      status: "pending", // All comments start as pending
       createdAt: now,
       updatedAt: now,
     });
 
-    // Increment comment count on item
-    await ctx.db.patch(args.itemId, {
-      commentCount: (item.commentCount || 0) + 1,
+    // Note: commentCount only incremented when comment is approved
+
+    return commentId;
+  },
+});
+
+/**
+ * Approve a comment (admin only)
+ */
+export const approveComment = mutation({
+  args: {
+    commentId: v.id("projectComments"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const userId = identity.subject;
+
+    // Get the comment
+    const comment = await ctx.db.get(args.commentId);
+    if (!comment) {
+      throw new Error("Comment not found");
+    }
+
+    // Verify admin owns the project
+    await verifyProjectOwnership(ctx, comment.projectId, userId);
+
+    if (comment.isDeleted) {
+      throw new Error("Cannot approve deleted comment");
+    }
+
+    if (comment.status === "approved") {
+      return { success: true, message: "Comment already approved" };
+    }
+
+    const now = Date.now();
+
+    // Update comment status to approved
+    await ctx.db.patch(args.commentId, {
+      status: "approved",
       updatedAt: now,
     });
 
-    return commentId;
+    // Increment comment count on item (only when approved)
+    const item = await ctx.db.get(comment.itemId);
+    if (item) {
+      await ctx.db.patch(comment.itemId, {
+        commentCount: (item.commentCount || 0) + 1,
+        updatedAt: now,
+      });
+    }
+
+    return { success: true };
+  },
+});
+
+/**
+ * Reject a comment (admin only)
+ */
+export const rejectComment = mutation({
+  args: {
+    commentId: v.id("projectComments"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const userId = identity.subject;
+
+    // Get the comment
+    const comment = await ctx.db.get(args.commentId);
+    if (!comment) {
+      throw new Error("Comment not found");
+    }
+
+    // Verify admin owns the project
+    await verifyProjectOwnership(ctx, comment.projectId, userId);
+
+    if (comment.isDeleted) {
+      throw new Error("Cannot reject deleted comment");
+    }
+
+    const now = Date.now();
+
+    // If comment was approved, decrement count
+    if (comment.status === "approved") {
+      const item = await ctx.db.get(comment.itemId);
+      if (item) {
+        await ctx.db.patch(comment.itemId, {
+          commentCount: Math.max(0, (item.commentCount || 0) - 1),
+          updatedAt: now,
+        });
+      }
+    }
+
+    // Update comment status to rejected
+    await ctx.db.patch(args.commentId, {
+      status: "rejected",
+      updatedAt: now,
+    });
+
+    return { success: true };
   },
 });
 
@@ -88,8 +190,10 @@ export const updateComment = mutation({
       throw new Error("Cannot edit deleted comment");
     }
 
+    // Reset to pending when edited
     await ctx.db.patch(args.commentId, {
       content: args.content,
+      status: "pending",
       updatedAt: Date.now(),
     });
 
@@ -140,13 +244,15 @@ export const deleteComment = mutation({
       updatedAt: now,
     });
 
-    // Decrement comment count on item
-    const item = await ctx.db.get(comment.itemId);
-    if (item) {
-      await ctx.db.patch(comment.itemId, {
-        commentCount: Math.max(0, (item.commentCount || 0) - 1),
-        updatedAt: now,
-      });
+    // Only decrement count if comment was approved
+    if (comment.status === "approved") {
+      const item = await ctx.db.get(comment.itemId);
+      if (item) {
+        await ctx.db.patch(comment.itemId, {
+          commentCount: Math.max(0, (item.commentCount || 0) - 1),
+          updatedAt: now,
+        });
+      }
     }
 
     return { success: true };

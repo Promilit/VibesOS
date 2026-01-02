@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import {
   Dialog,
@@ -9,7 +12,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ThumbsUp, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ThumbsUp, Calendar, Loader2 } from "lucide-react";
 import { CommentsSection } from "./comments-section";
 import { formatDistanceToNow } from "date-fns";
 
@@ -32,6 +36,27 @@ interface ItemDetailDialogProps {
 }
 
 export function ItemDetailDialog({ item, projectId, open, onOpenChange }: ItemDetailDialogProps) {
+  const [isVoting, setIsVoting] = useState(false);
+
+  const hasVoted = useQuery(
+    api.projects.admin.queries.hasVotedOnItem,
+    item ? { itemId: item._id } : "skip"
+  );
+  const voteOnItem = useMutation(api.projects.admin.mutations.voteOnItem);
+
+  const handleVote = async () => {
+    if (!item) return;
+    setIsVoting(true);
+    try {
+      await voteOnItem({ itemId: item._id });
+    } catch (error) {
+      console.error("Failed to vote:", error);
+      alert("Failed to vote. Please try again.");
+    } finally {
+      setIsVoting(false);
+    }
+  };
+
   if (!item) return null;
 
   const statusColors = {
@@ -57,10 +82,20 @@ export function ItemDetailDialog({ item, projectId, open, onOpenChange }: ItemDe
             <Badge className={statusColors[item.status]}>
               {statusLabels[item.status]}
             </Badge>
-            <span className="flex items-center gap-1 text-xs">
-              <ThumbsUp className="h-3 w-3" />
+            <Button
+              variant={hasVoted ? "default" : "outline"}
+              size="sm"
+              onClick={handleVote}
+              disabled={isVoting || hasVoted === undefined}
+              className="h-6 px-2 text-xs"
+            >
+              {isVoting ? (
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+              ) : (
+                <ThumbsUp className={`h-3 w-3 mr-1 ${hasVoted ? "fill-current" : ""}`} />
+              )}
               {item.voteCount} {item.voteCount === 1 ? "vote" : "votes"}
-            </span>
+            </Button>
             <span className="flex items-center gap-1 text-xs">
               <Calendar className="h-3 w-3" />
               Created {formatDistanceToNow(item.createdAt, { addSuffix: true })}

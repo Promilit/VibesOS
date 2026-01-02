@@ -164,6 +164,8 @@ export default defineSchema({
       content: v.string(),
       parentCommentId: v.optional(v.id("projectComments")), // For threaded replies
       isDeleted: v.boolean(), // Soft delete
+      // Moderation status - all comments require admin approval
+      status: v.optional(v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected"))),
       createdAt: v.number(),
       updatedAt: v.number(),
     })
@@ -171,7 +173,8 @@ export default defineSchema({
       .index("byProjectId", ["projectId"])
       .index("byAuthorId", ["authorId"])
       .index("byParentCommentId", ["parentCommentId"])
-      .index("byItemIdAndCreatedAt", ["itemId", "createdAt"]), // For chronological listing
+      .index("byItemIdAndCreatedAt", ["itemId", "createdAt"])
+      .index("byProjectIdAndStatus", ["projectId", "status"]), // For moderation queue
 
     // Project analytics - daily aggregated metrics
     projectAnalytics: defineTable({

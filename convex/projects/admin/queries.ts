@@ -279,6 +279,32 @@ export const getItemVoteCount = query({
 });
 
 /**
+ * Check if admin has voted on an item
+ */
+export const hasVotedOnItem = query({
+  args: {
+    itemId: v.id("projectItems"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return false;
+    }
+
+    const userId = identity.subject;
+
+    const existingVote = await ctx.db
+      .query("projectVotes")
+      .withIndex("byItemIdAndClerkUserId", (q) =>
+        q.eq("itemId", args.itemId).eq("clerkUserId", userId)
+      )
+      .first();
+
+    return !!existingVote;
+  },
+});
+
+/**
  * Get all voters for an item (for admin view)
  */
 export const getItemVoters = query({

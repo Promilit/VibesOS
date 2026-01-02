@@ -28,12 +28,14 @@ export const getItemComments = query({
     await verifyProjectOwnership(ctx, item.projectId, userId);
 
     // Get all comments for this item
-    const comments = await ctx.db
+    const allComments = await ctx.db
       .query("projectComments")
       .withIndex("byItemId", (q) => q.eq("itemId", args.itemId))
       .collect();
 
-    // Filter out deleted comments (but keep them for threading)
+    // Filter out deleted comments
+    const comments = allComments.filter((c) => !c.isDeleted);
+
     // Sort by creation time
     const sortedComments = comments.sort((a, b) => a.createdAt - b.createdAt);
 

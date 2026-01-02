@@ -611,6 +611,65 @@ export const reorderItem = mutation({
 });
 
 /**
+ * Admin vote on an item
+ */
+export const voteOnItem = mutation({
+  args: {
+    itemId: v.id("projectItems"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const userId = identity.subject;
+
+    const item = await ctx.db.get(args.itemId);
+    if (!item) {
+      throw new Error("Item not found");
+    }
+
+    // Verify ownership
+    await verifyProjectOwnership(ctx, item.projectId, userId);
+
+    // Check if admin already voted
+    const existingVote = await ctx.db
+      .query("projectVotes")
+      .withIndex("byItemIdAndClerkUserId", (q) =>
+        q.eq("itemId", args.itemId).eq("clerkUserId", userId)
+      )
+      .first();
+
+    if (existingVote) {
+      // Toggle off - remove vote
+      await ctx.db.delete(existingVote._id);
+      await ctx.db.patch(args.itemId, {
+        voteCount: Math.max(0, (item.voteCount || 0) - 1),
+        updatedAt: Date.now(),
+      });
+      return { voted: false };
+    }
+
+    // Create vote
+    await ctx.db.insert("projectVotes", {
+      clerkUserId: userId,
+      itemId: args.itemId,
+      projectId: item.projectId,
+      createdAt: Date.now(),
+    });
+
+    // Increment vote count
+    await ctx.db.patch(args.itemId, {
+      voteCount: (item.voteCount || 0) + 1,
+      updatedAt: Date.now(),
+    });
+
+    return { voted: true };
+  },
+});
+
+/**
  * Save project customization
  */
 export const saveCustomization = mutation({
