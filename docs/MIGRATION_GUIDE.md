@@ -37,6 +37,8 @@ Convex handles table renames automatically via schema evolution:
 - ✅ Comments system with threading
 - ✅ Analytics dashboard per project
 - ✅ Fixed API key tracking (updates on ALL operations)
+- ✅ One-to-one API key to project linking
+- ✅ API keys page shows linked project info
 
 ## Migration Steps
 
@@ -84,22 +86,27 @@ npx convex run migrations/kanbanToProjects:verifyMigration
 npx convex run migrations/kanbanToProjects:rollbackMigration
 ```
 
-### Phase 3: Update Dashboard UI (PENDING)
+### Phase 3: Update Dashboard UI (IN PROGRESS)
 
-**Status**: Not started
+**Status**: Partially complete
 
-**Tasks**:
-- [ ] Create new `/app/dashboard/projects/` directory structure
-- [ ] Project list page with create/delete functionality
-- [ ] Project detail page with 3 tabs: Board, Analytics, Settings
+**Completed**:
+- ✅ Create new `/app/dashboard/projects/` directory structure
+- ✅ Project list page with create/delete functionality
+- ✅ Project detail page with tabs: Board, Analytics, Settings
+- ✅ API key selection in project creation (one API key per project)
+- ✅ API keys page shows "Linked To" column with project name
+- ✅ Create Project dialog filters out already-linked API keys
+
+**Remaining Tasks**:
 - [ ] Move kanban board components to Board tab
 - [ ] Move widget customization to Settings tab
 - [ ] Update navigation in sidebar
 - [ ] Delete old `/app/dashboard/kanban/` directory
 
 **File Changes**:
-- Create: `app/dashboard/projects/page.tsx`
-- Create: `app/dashboard/projects/[projectId]/page.tsx`
+- ✅ Created: `app/dashboard/projects/page.tsx`
+- ✅ Created: `app/dashboard/projects/[projectId]/page.tsx`
 - Create: `app/dashboard/projects/[projectId]/components/board-tab.tsx`
 - Create: `app/dashboard/projects/[projectId]/components/analytics-tab.tsx`
 - Create: `app/dashboard/projects/[projectId]/components/settings-tab.tsx`
@@ -107,24 +114,31 @@ npx convex run migrations/kanbanToProjects:rollbackMigration
 - Delete: `app/dashboard/kanban/*`
 - Delete: `app/dashboard/widget-customization/*`
 
-### Phase 4: Update Widget (PENDING)
+### Phase 4: Update Widget (IN PROGRESS)
 
-**Status**: Not started
+**Status**: Partially complete
 
-**Tasks**:
-- [ ] Update widget API client to use new action endpoints
-- [ ] Implement per-project customization loading
-- [ ] Update widget to display all projects in tabs
-- [ ] Test widget with new backend
+**Completed**:
+- ✅ Created `widget/src/lib/dom.ts` - DOM utilities
+- ✅ Created `widget/src/components/BoardList.ts` - Board selection component
+- ✅ Created `widget/src/components/BoardView.ts` - Kanban board display
+- ✅ Widget builds successfully
+- ✅ Updated widget API client to use new action endpoints
+- ✅ Implemented per-project customization loading
+- ✅ Added backward compatibility aliases (`getBoards()` → `getProjects()`)
+
+**Remaining Tasks**:
+- [ ] Test widget with new backend (widget preview)
+- [ ] Verify board selection works correctly
 
 **File Changes**:
-- Update: `widget/src/lib/api.ts`
-  - Rename: `getBoards()` → `getProjects()`
-  - Update: Use actions instead of queries for tracking
-  - Add: `getProjectCustomization(projectId)`
-- Update: `widget/src/components/*`
-  - Update: Switch between projects
-  - Update: Load per-project customization
+- ✅ Created: `widget/src/lib/dom.ts`
+- ✅ Created: `widget/src/components/BoardList.ts`
+- ✅ Created: `widget/src/components/BoardView.ts`
+- ✅ Updated: `widget/src/lib/api.ts`
+  - Renamed: `getBoards()` → `getProjects()` (with backward compat alias)
+  - Updated: Uses actions instead of queries for tracking
+  - Added: `getProjectCustomization(projectId)`
 
 ### Phase 5: Add Comments System (PENDING)
 
@@ -206,7 +220,26 @@ api.projects.admin.mutations.saveCustomization({ projectId, ...customization })
 
 ## Breaking Changes
 
-### 1. Customization is Now Per-Project
+### 1. API Keys Are Now Linked to Projects (One-to-One)
+
+**Before**: API keys were independent, any key could access any board
+
+**After**: Each project requires a dedicated API key, and each API key can only be linked to one project
+
+**Dashboard Changes**:
+- Create Project dialog requires selecting an API key
+- API keys already linked to a project are hidden from the dropdown
+- API keys page shows "Linked To" column with project name
+- Warning shown when all API keys are already in use
+
+**Backend Changes**:
+- `projects` table has `apiKeyId` field linking to the API key
+- `getUserApiKeys` query returns `linkedProject` field with project name
+- Widget uses the linked API key to access project data
+
+**Why this change**: Ensures clear ownership and prevents accidental data exposure across projects.
+
+### 2. Customization is Now Per-Project
 
 **Before**: One global customization per user (shared across all boards)
 ```typescript
@@ -222,7 +255,7 @@ api.projects.widget.actions.getCustomization({ apiKeyHash, projectId })
 
 **Migration handles this**: Copies global customization to all user projects.
 
-### 2. Widget Must Track Current Project
+### 3. Widget Must Track Current Project
 
 **Before**: Widget showed 3 fixed boards
 
@@ -232,7 +265,7 @@ api.projects.widget.actions.getCustomization({ apiKeyHash, projectId })
 - Fetch customization for selected project
 - Apply project-specific styling when switching
 
-### 3. API Key Tracking Now Works on Queries
+### 4. API Key Tracking Now Works on Queries
 
 **Before**: `lastUsed` only updated on mutations
 
@@ -293,8 +326,8 @@ npx convex run migrations/kanbanToProjects:migrateKanbanToProjects
 
 - **Phase 1**: Backend Migration - ✅ COMPLETE
 - **Phase 2**: Data Migration - ⏳ READY TO RUN
-- **Phase 3**: Dashboard UI - 📅 Next
-- **Phase 4**: Widget Updates - 📅 Upcoming
+- **Phase 3**: Dashboard UI - 🔄 IN PROGRESS (API key linking complete)
+- **Phase 4**: Widget Updates - 🔄 IN PROGRESS (components created)
 - **Phase 5**: Comments - 📅 Upcoming
 - **Phase 6**: Analytics - 📅 Upcoming
 - **Phase 7**: Testing & Cleanup - 📅 Final

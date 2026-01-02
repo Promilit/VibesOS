@@ -68,6 +68,20 @@ export const getUserApiKeys = query({
       .withIndex("byUserId", (q) => q.eq("userId", userId))
       .collect();
 
+    // Fetch all projects to check which API keys are linked
+    const projects = await ctx.db
+      .query("projects")
+      .withIndex("byUserId", (q) => q.eq("userId", userId))
+      .collect();
+
+    // Create a map of apiKeyId -> project name
+    const apiKeyToProject = new Map<string, string>();
+    for (const project of projects) {
+      if (project.apiKeyId) {
+        apiKeyToProject.set(project.apiKeyId, project.name);
+      }
+    }
+
     // Return sanitized data (never return keyHash)
     return apiKeys.map((key) => ({
       id: key._id,
@@ -77,6 +91,7 @@ export const getUserApiKeys = query({
       lastUsed: key.lastUsed,
       expiresAt: key.expiresAt,
       isActive: key.isActive,
+      linkedProject: apiKeyToProject.get(key._id) || null,
     }));
   },
 });

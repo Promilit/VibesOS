@@ -2,7 +2,7 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
 const isProtectedRoute = createRouteMatcher(['/dashboard(.*)'])
-const isEmbedRoute = createRouteMatcher(['/embed(.*)'])
+const isEmbedRoute = createRouteMatcher(['/embed(.*)', '/widget-preview(.*)'])
 
 export default clerkMiddleware(async (auth, req) => {
   // Protect dashboard routes

@@ -181,6 +181,181 @@ export const rollbackMigration = internalMutation({
 });
 
 /**
+ * Add projectBoards to existing projects that don't have them
+ *
+ * This is needed for projects created before the 3-board system was implemented.
+ * Creates Feature Requests, Bug Reports, and Internal Roadmap boards for each project.
+ */
+export const addProjectBoards = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const results = {
+      projectsProcessed: 0,
+      boardsCreated: 0,
+      columnsCreated: 0,
+      columnsLinked: 0,
+      itemsLinked: 0,
+      errors: [] as string[],
+    };
+
+    const BOARD_TYPES = [
+      { type: "feature-requests" as const, name: "Feature Requests", order: 0 },
+      { type: "bug-reports" as const, name: "Bug Reports", order: 1 },
+      { type: "internal-roadmap" as const, name: "Internal Roadmap", order: 2 },
+    ];
+
+    const DEFAULT_COLUMNS = [
+      { name: "Backlog", slug: "backlog", order: 0, canAddItems: true },
+      { name: "In Progress", slug: "in-progress", order: 1, canAddItems: false },
+      { name: "Review", slug: "review", order: 2, canAddItems: false },
+      { name: "Done", slug: "done", order: 3, canAddItems: false },
+    ];
+
+    try {
+      // Get all projects
+      const projects = await ctx.db.query("projects").collect();
+      console.log(`Found ${projects.length} projects`);
+
+      for (const project of projects) {
+        // Check if project already has boards
+        const existingBoards = await ctx.db
+          .query("projectBoards")
+          .withIndex("byProjectId", (q) => q.eq("projectId", project._id))
+          .collect();
+
+        if (existingBoards.length > 0) {
+          console.log(`Project "${project.name}" already has ${existingBoards.length} boards, skipping`);
+          continue;
+        }
+
+        console.log(`Processing project "${project.name}"...`);
+        results.projectsProcessed++;
+
+        // Get enabled boards from project (or default to all)
+        // @ts-ignore - enabledBoards might not exist on old projects
+        const enabledBoards = project.enabledBoards || ["feature-requests", "bug-reports", "internal-roadmap"];
+
+        const now = Date.now();
+
+        // Get existing columns for this project (legacy columns without boardId)
+        const existingColumns = await ctx.db
+          .query("projectColumns")
+          .withIndex("byProjectId", (q) => q.eq("projectId", project._id))
+          .collect();
+
+        // Get existing items for this project (legacy items without boardId)
+        const existingItems = await ctx.db
+          .query("projectItems")
+          .withIndex("byProjectId", (q) => q.eq("projectId", project._id))
+          .collect();
+
+        // Create the first board (Feature Requests) and link existing data to it
+        const firstBoardDef = BOARD_TYPES[0];
+        const firstBoardId = await ctx.db.insert("projectBoards", {
+          projectId: project._id,
+          boardType: firstBoardDef.type,
+          name: firstBoardDef.name,
+          isVisible: enabledBoards.includes(firstBoardDef.type),
+          order: firstBoardDef.order,
+          createdAt: now,
+        });
+        results.boardsCreated++;
+        console.log(`  Created board: ${firstBoardDef.name}`);
+
+        // Link existing columns to the first board (or create new ones if none exist)
+        if (existingColumns.length > 0) {
+          for (const column of existingColumns) {
+            if (!column.boardId) {
+              await ctx.db.patch(column._id, { boardId: firstBoardId });
+              results.columnsLinked++;
+            }
+          }
+          console.log(`  Linked ${results.columnsLinked} existing columns to ${firstBoardDef.name}`);
+        } else {
+          // Create default columns for first board
+          for (const column of DEFAULT_COLUMNS) {
+            await ctx.db.insert("projectColumns", {
+              projectId: project._id,
+              boardId: firstBoardId,
+              name: column.name,
+              slug: column.slug,
+              order: column.order,
+              canAddItems: column.canAddItems,
+              createdAt: now,
+            });
+            results.columnsCreated++;
+          }
+          console.log(`  Created ${DEFAULT_COLUMNS.length} columns for ${firstBoardDef.name}`);
+        }
+
+        // Link existing items to the first board
+        for (const item of existingItems) {
+          if (!item.boardId) {
+            await ctx.db.patch(item._id, { boardId: firstBoardId });
+            results.itemsLinked++;
+          }
+        }
+        if (existingItems.length > 0) {
+          console.log(`  Linked ${existingItems.length} existing items to ${firstBoardDef.name}`);
+        }
+
+        // Create remaining boards (Bug Reports and Internal Roadmap) with their own columns
+        for (let i = 1; i < BOARD_TYPES.length; i++) {
+          const boardDef = BOARD_TYPES[i];
+
+          const boardId = await ctx.db.insert("projectBoards", {
+            projectId: project._id,
+            boardType: boardDef.type,
+            name: boardDef.name,
+            isVisible: enabledBoards.includes(boardDef.type),
+            order: boardDef.order,
+            createdAt: now,
+          });
+          results.boardsCreated++;
+          console.log(`  Created board: ${boardDef.name}`);
+
+          // Create columns for this board
+          for (const column of DEFAULT_COLUMNS) {
+            await ctx.db.insert("projectColumns", {
+              projectId: project._id,
+              boardId: boardId,
+              name: column.name,
+              slug: column.slug,
+              order: column.order,
+              canAddItems: column.canAddItems,
+              createdAt: now,
+            });
+            results.columnsCreated++;
+          }
+        }
+
+        // Update project with enabledBoards if it doesn't have it
+        // @ts-ignore
+        if (!project.enabledBoards) {
+          await ctx.db.patch(project._id, {
+            enabledBoards: ["feature-requests", "bug-reports", "internal-roadmap"],
+          });
+        }
+      }
+
+      console.log("\n=== Migration Complete ===");
+      console.log(`Projects processed: ${results.projectsProcessed}`);
+      console.log(`Boards created: ${results.boardsCreated}`);
+      console.log(`Columns created: ${results.columnsCreated}`);
+      console.log(`Columns linked: ${results.columnsLinked}`);
+      console.log(`Items linked: ${results.itemsLinked}`);
+
+      return results;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Migration failed:", errorMessage);
+      results.errors.push(errorMessage);
+      throw error;
+    }
+  },
+});
+
+/**
  * Verify migration status
  *
  * Checks if the migration has been completed successfully

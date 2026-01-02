@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -20,12 +20,21 @@ function WidgetPreviewContent() {
   const theme = searchParams.get("theme") || "light";
 
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  // Fetch project boards
+  // Fetch project boards - uses authenticated admin query
   const projectBoards = useQuery(
     api.projects.admin.queries.getProjectBoards,
     projectId ? { projectId } : "skip"
   );
+
+  // Track auth errors
+  useEffect(() => {
+    // If query returns null (not undefined which means loading), check for auth issues
+    if (projectBoards === null) {
+      setAuthError("Unable to load project data. Please ensure you're logged in.");
+    }
+  }, [projectBoards]);
 
   // Determine effective board ID
   const effectiveBoardId = selectedBoardId || (projectBoards && projectBoards.length > 0 ? projectBoards[0]._id : null);
@@ -40,11 +49,36 @@ function WidgetPreviewContent() {
 
   const isDark = theme === "dark";
 
-  // Loading state
+  // Loading state - show for max 5 seconds then show helpful message
+  const [loadingTooLong, setLoadingTooLong] = useState(false);
+  useEffect(() => {
+    if (projectBoards === undefined) {
+      const timer = setTimeout(() => setLoadingTooLong(true), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [projectBoards]);
+
   if (projectBoards === undefined) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDark ? "bg-gray-900" : "bg-white"}`}>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <div className={`min-h-screen flex flex-col items-center justify-center ${isDark ? "bg-gray-900" : "bg-white"}`}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
+        {loadingTooLong && (
+          <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+            Loading preview... Make sure you&apos;re logged in.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Auth error state
+  if (authError) {
+    return (
+      <div className={`min-h-screen p-4 flex items-center justify-center ${isDark ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}>
+        <div className="text-center">
+          <p className="text-amber-500 mb-2">Authentication Required</p>
+          <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>{authError}</p>
+        </div>
       </div>
     );
   }

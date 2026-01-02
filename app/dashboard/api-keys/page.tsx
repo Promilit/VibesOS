@@ -264,6 +264,7 @@ function ApiKeysCard() {
                     <TableHead>Name</TableHead>
                     <TableHead>Key</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Linked To</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead>Last Used</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -284,6 +285,13 @@ function ApiKeysCard() {
                         >
                           {key.isActive ? "Active" : "Revoked"}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {key.linkedProject ? (
+                          <span className="text-foreground">{key.linkedProject}</span>
+                        ) : (
+                          <span className="text-muted-foreground">Not linked</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(key.createdAt)}

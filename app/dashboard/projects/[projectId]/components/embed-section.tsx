@@ -189,18 +189,19 @@ import { KanbanWidget } from '@uservibes/kanban-widget';
 
       {/* Preview Modal */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-5xl h-[80vh]">
+        <DialogContent className="max-w-5xl h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Widget Preview</DialogTitle>
             <DialogDescription>
               This is how your widget will appear to users
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-hidden rounded-lg border">
+          <div className="flex-1 min-h-0 overflow-hidden rounded-lg border bg-gray-100">
             <iframe
               src={`/widget-preview?projectId=${projectId}`}
-              className="w-full h-full"
+              className="w-full h-full border-0"
               title="Widget Preview"
+              style={{ minHeight: "500px" }}
             />
           </div>
         </DialogContent>

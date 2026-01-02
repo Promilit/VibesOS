@@ -36,7 +36,9 @@ export default function ProjectsPage() {
     enabledBoards: ["feature-requests", "bug-reports", "internal-roadmap"] as string[],
   });
 
-  const hasApiKeys = apiKeys && apiKeys.length > 0;
+  // Filter to only show API keys that are not already linked to a project
+  const availableApiKeys = apiKeys?.filter((key: any) => !key.linkedProject) || [];
+  const hasApiKeys = availableApiKeys.length > 0;
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -244,9 +246,11 @@ export default function ProjectsPage() {
                   <Alert className="bg-amber-50 border-amber-200">
                     <Key className="h-4 w-4 text-amber-600" />
                     <AlertDescription className="text-amber-800">
-                      You need an API key to create a project.{" "}
+                      {apiKeys && apiKeys.length > 0
+                        ? "All your API keys are already linked to projects. "
+                        : "You need an API key to create a project. "}
                       <Link href="/dashboard/api-keys" className="font-medium underline">
-                        Create one first
+                        {apiKeys && apiKeys.length > 0 ? "Create a new API key" : "Create one first"}
                       </Link>
                     </AlertDescription>
                   </Alert>
@@ -283,16 +287,12 @@ export default function ProjectsPage() {
                   <select
                     id="apiKey"
                     value={formData.apiKeyId}
-                    onChange={(e) => {
-                      console.log("Selected value:", e.target.value);
-                      console.log("API Keys:", apiKeys);
-                      setFormData({ ...formData, apiKeyId: e.target.value });
-                    }}
+                    onChange={(e) => setFormData({ ...formData, apiKeyId: e.target.value })}
                     disabled={!hasApiKeys}
                     className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <option value="">Select an API key</option>
-                    {apiKeys?.map((key: any) => (
+                    {availableApiKeys.map((key: any) => (
                       <option key={key.id} value={key.id}>
                         {key.name} ({key.keyPrefix}...)
                       </option>
