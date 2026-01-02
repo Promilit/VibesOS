@@ -1,7 +1,8 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
+import Script from "next/script";
 
 /**
  * Embed Page for iframe distribution
@@ -16,14 +17,14 @@ import { Suspense, useEffect, useState } from "react";
 
 function EmbedWidget() {
   const searchParams = useSearchParams();
-  const [isClient, setIsClient] = useState(false);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
 
   const apiKey = searchParams.get("apiKey") || "";
   const theme = (searchParams.get("theme") as "light" | "dark" | "auto") || "light";
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  // Get environment variables for Convex and Clerk
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || "";
+  const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "";
 
   if (!apiKey) {
     return (
@@ -43,109 +44,49 @@ function EmbedWidget() {
     );
   }
 
-  if (!isClient) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse text-gray-400">Loading widget...</div>
-      </div>
-    );
-  }
-
-  // Get environment variables for Convex and Clerk
-  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || "";
-  const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "";
-
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        backgroundColor: theme === "dark" ? "#0f0f0f" : "#fafafa",
-      }}
-    >
-      {/*
-        The widget web component will be rendered here.
-        For now, we render a placeholder that loads the widget dynamically.
-      */}
-      <WidgetLoader
-        apiKey={apiKey}
-        theme={theme}
-        convexUrl={convexUrl}
-        clerkKey={clerkPublishableKey}
+    <>
+      {/* Load the widget script */}
+      <Script
+        src="/widget/uservibes-widget.umd.js"
+        strategy="afterInteractive"
+        onLoad={() => setScriptLoaded(true)}
+        onError={() => {
+          console.error("Failed to load widget script");
+        }}
       />
-    </div>
-  );
-}
 
-interface WidgetLoaderProps {
-  apiKey: string;
-  theme: "light" | "dark" | "auto";
-  convexUrl: string;
-  clerkKey: string;
-}
-
-function WidgetLoader({ apiKey, theme, convexUrl, clerkKey }: WidgetLoaderProps) {
-  const [loaded, setLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // For production, load the widget script from CDN
-    // For development, we'll render inline since widget is in same repo
-
-    // Check if custom element is already defined
-    if (customElements.get("uservibes-kanban")) {
-      setLoaded(true);
-      return;
-    }
-
-    // In development, dynamically import the widget
-    // In production, this would load from CDN
-    const loadWidget = async () => {
-      try {
-        // Try to dynamically import the widget (works in dev)
-        // For production, replace with script tag loading
-        const widgetModule = await import("../../widget/src/index");
-        widgetModule.registerWidget();
-        setLoaded(true);
-      } catch (err) {
-        console.error("Failed to load widget:", err);
-        setError("Failed to load widget. Please try again later.");
-      }
-    };
-
-    loadWidget();
-  }, []);
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center p-8 max-w-md">
-          <h1 className="text-xl font-semibold text-red-600 mb-2">Error</h1>
-          <p className="text-gray-600">{error}</p>
-        </div>
+      <div
+        className="min-h-screen"
+        style={{
+          backgroundColor: theme === "dark" ? "#0f0f0f" : "#fafafa",
+        }}
+      >
+        {!scriptLoaded ? (
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+          </div>
+        ) : (
+          <div className="w-full h-full min-h-screen">
+            <div
+              ref={(el) => {
+                if (el && !el.querySelector("uservibes-kanban")) {
+                  const widget = document.createElement("uservibes-kanban");
+                  widget.setAttribute("api-key", apiKey);
+                  widget.setAttribute("theme", theme);
+                  widget.setAttribute("convex-url", convexUrl);
+                  widget.setAttribute("clerk-key", clerkPublishableKey);
+                  widget.style.width = "100%";
+                  widget.style.minHeight = "100vh";
+                  widget.style.display = "block";
+                  el.appendChild(widget);
+                }
+              }}
+            />
+          </div>
+        )}
       </div>
-    );
-  }
-
-  if (!loaded) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  // Render the web component
-  return (
-    <div className="w-full h-full min-h-screen">
-      {/* @ts-expect-error - Custom element not recognized by TypeScript */}
-      <uservibes-kanban
-        api-key={apiKey}
-        theme={theme}
-        convex-url={convexUrl}
-        clerk-key={clerkKey}
-        style={{ width: "100%", minHeight: "100vh", display: "block" }}
-      />
-    </div>
+    </>
   );
 }
 

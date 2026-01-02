@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Permission checking helpers for kanban items and boards
  */

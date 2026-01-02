@@ -7,7 +7,7 @@
 import type { Clerk } from "@clerk/clerk-js";
 
 // Types
-export interface Board {
+export interface Project {
   _id: string;
   name: string;
   slug: string;
@@ -16,6 +16,9 @@ export interface Board {
   allowUserSubmissions: boolean;
   columns?: Column[];
 }
+
+// Backward compatibility alias
+export type Board = Project;
 
 export interface Column {
   _id: string;
@@ -27,14 +30,16 @@ export interface Column {
 
 export interface Item {
   _id: string;
-  boardId: string;
+  projectId: string;
   columnId: string;
   title: string;
   description?: string;
   voteCount: number;
+  commentCount: number;
   createdBy: string;
   createdByType: "admin" | "widget_user";
   position: number;
+  status: "backlog" | "in-progress" | "review" | "done";
   createdAt: number;
 }
 
@@ -143,14 +148,14 @@ export class WidgetApiClient {
     }
   }
 
-  private async query(
+  private async action(
     functionName: string,
     args: Record<string, unknown>
   ): Promise<unknown> {
     const token = await this.getAuthToken();
     return convexFetch(
       this.convexUrl,
-      "api/query",
+      "api/action",
       { path: functionName, args },
       token
     );
@@ -209,10 +214,10 @@ export class WidgetApiClient {
     }
   }
 
-  // Data fetching methods (use queries with hashed API key)
-  async getBoards(): Promise<Board[]> {
+  // Data fetching methods (use actions with hashed API key for tracking)
+  async getProjects(): Promise<Project[]> {
     const apiKeyHash = await this.getApiKeyHash();
-    const boards = (await this.query("kanban/widget/queries:getBoards", {
+    const projects = (await this.action("projects/widget/actions:getProjects", {
       apiKeyHash,
     })) as Array<{
       _id: string;
@@ -223,43 +228,70 @@ export class WidgetApiClient {
       columns: Column[];
     }>;
     // Map to simpler format
-    return boards.map((b) => ({
-      _id: b._id,
-      name: b.name,
-      slug: b.slug,
-      description: b.description,
-      isPublic: !b.isPublicViewOnly,
-      allowUserSubmissions: !b.isPublicViewOnly,
-      columns: b.columns,
+    return projects.map((p) => ({
+      _id: p._id,
+      name: p.name,
+      slug: p.slug,
+      description: p.description,
+      isPublic: !p.isPublicViewOnly,
+      allowUserSubmissions: !p.isPublicViewOnly,
+      columns: p.columns,
     }));
   }
 
-  async getBoardWithColumns(
-    boardId: string
-  ): Promise<{ board: Board; columns: Column[] } | null> {
-    const boards = await this.getBoards();
-    const boardData = boards.find((b) => b._id === boardId);
-    if (!boardData) return null;
+  // Backward compatibility alias
+  async getBoards(): Promise<Board[]> {
+    return this.getProjects();
+  }
+
+  async getProjectWithColumns(
+    projectId: string
+  ): Promise<{ project: Project; columns: Column[] } | null> {
+    const projects = await this.getProjects();
+    const projectData = projects.find((p) => p._id === projectId);
+    if (!projectData) return null;
 
     return {
-      board: boardData,
-      columns: boardData.columns || [],
+      project: projectData,
+      columns: projectData.columns || [],
     };
   }
 
-  async getBoardItems(boardId: string): Promise<Item[]> {
+  // Backward compatibility alias
+  async getBoardWithColumns(
+    boardId: string
+  ): Promise<{ board: Board; columns: Column[] } | null> {
+    const result = await this.getProjectWithColumns(boardId);
+    if (!result) return null;
+    return { board: result.project, columns: result.columns };
+  }
+
+  async getProjectItems(projectId: string): Promise<Item[]> {
     const apiKeyHash = await this.getApiKeyHash();
-    return (await this.query("kanban/widget/queries:getItems", {
+    return (await this.action("projects/widget/actions:getItems", {
       apiKeyHash,
-      boardId,
+      projectId,
     })) as Item[];
   }
 
-  async getCustomization(): Promise<Customization | null> {
+  // Backward compatibility alias
+  async getBoardItems(boardId: string): Promise<Item[]> {
+    return this.getProjectItems(boardId);
+  }
+
+  async getProjectCustomization(projectId: string): Promise<Customization | null> {
     const apiKeyHash = await this.getApiKeyHash();
-    return (await this.query("kanban/widget/queries:getCustomization", {
+    return (await this.action("projects/widget/actions:getCustomization", {
       apiKeyHash,
+      projectId,
     })) as Customization | null;
+  }
+
+  // Legacy method - returns customization for first project
+  async getCustomization(): Promise<Customization | null> {
+    const projects = await this.getProjects();
+    if (projects.length === 0) return null;
+    return this.getProjectCustomization(projects[0]._id);
   }
 
   // User actions (require Clerk authentication)
@@ -268,7 +300,7 @@ export class WidgetApiClient {
       return { success: false, error: "Not authenticated" };
     }
     const apiKeyHash = await this.getApiKeyHash();
-    return (await this.mutation("kanban/widget/mutations:vote", {
+    return (await this.mutation("projects/widget/mutations:vote", {
       apiKeyHash,
       itemId,
     })) as { success: boolean; error?: string };
@@ -279,14 +311,14 @@ export class WidgetApiClient {
       return { success: false, error: "Not authenticated" };
     }
     const apiKeyHash = await this.getApiKeyHash();
-    return (await this.mutation("kanban/widget/mutations:unvote", {
+    return (await this.mutation("projects/widget/mutations:unvote", {
       apiKeyHash,
       itemId,
     })) as { success: boolean; error?: string };
   }
 
   async createItem(
-    boardId: string,
+    projectId: string,
     title: string,
     description?: string
   ): Promise<{ success: boolean; itemId?: string; error?: string }> {
@@ -294,23 +326,28 @@ export class WidgetApiClient {
       return { success: false, error: "Not authenticated" };
     }
     const apiKeyHash = await this.getApiKeyHash();
-    return (await this.mutation("kanban/widget/mutations:createItem", {
+    return (await this.mutation("projects/widget/mutations:createItem", {
       apiKeyHash,
-      boardId,
+      projectId,
       title,
       description,
     })) as { success: boolean; itemId?: string; error?: string };
   }
 
-  async getUserVotes(boardId: string): Promise<string[]> {
+  async getUserVotes(projectId: string): Promise<string[]> {
     if (!this.isAuthenticated()) {
+      return [];
+    }
+    const user = this.getCurrentUser();
+    if (!user) {
       return [];
     }
     const apiKeyHash = await this.getApiKeyHash();
     try {
-      return (await this.query("kanban/widget/queries:getUserVotes", {
+      return (await this.action("projects/widget/actions:getUserVotes", {
         apiKeyHash,
-        boardId,
+        clerkUserId: user.id,
+        projectId,
       })) as string[];
     } catch {
       return [];

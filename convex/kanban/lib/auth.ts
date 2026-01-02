@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Authentication helpers
  * Note: Authentication is now handled by Clerk

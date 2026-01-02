@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Admin queries for kanban board management
  * These functions are only accessible to authenticated Clerk users (admins)

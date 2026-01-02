@@ -50,14 +50,9 @@ const data = {
       icon: IconDashboard,
     },
     {
-      title: "Kanban Boards",
-      url: "/dashboard/kanban",
+      title: "Projects",
+      url: "/dashboard/projects",
       icon: IconLayoutKanban,
-    },
-    {
-      title: "Widget Customization",
-      url: "/dashboard/widget-customization",
-      icon: IconPalette,
     },
     {
       title: "Payment gated",

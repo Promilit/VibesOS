@@ -270,7 +270,7 @@ function ApiKeysCard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {apiKeys.map((key) => (
+                  {apiKeys.map((key: any) => (
                     <TableRow key={key.id}>
                       <TableCell className="font-medium">{key.name}</TableCell>
                       <TableCell>

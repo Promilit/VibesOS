@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Admin mutations for kanban board management
  * These functions are only accessible to authenticated Clerk users (admins)

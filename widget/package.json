@@ -20,7 +20,8 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && npm run copy-to-public",
+    "copy-to-public": "mkdir -p ../public/widget && cp dist/uservibes-widget.umd.js dist/uservibes-widget.umd.js.map ../public/widget/",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"

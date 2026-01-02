@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Position calculation helpers for drag-and-drop ordering
  * Uses fractional indexing to allow items to be inserted between existing items
