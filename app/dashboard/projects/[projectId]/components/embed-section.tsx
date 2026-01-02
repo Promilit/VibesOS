@@ -187,21 +187,20 @@ import { KanbanWidget } from '@uservibes/kanban-widget';
         </CardContent>
       </Card>
 
-      {/* Preview Modal */}
+      {/* Preview Modal - Nearly Full Screen */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-5xl h-[80vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] flex flex-col p-4">
+          <DialogHeader className="pb-2">
             <DialogTitle>Widget Preview</DialogTitle>
             <DialogDescription>
-              This is how your widget will appear to users
+              This is how your widget will appear to users. All customization settings are applied.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-hidden rounded-lg border bg-gray-100">
+          <div className="flex-1 min-h-0 overflow-hidden rounded-lg border">
             <iframe
               src={`/widget-preview?projectId=${projectId}`}
               className="w-full h-full border-0"
               title="Widget Preview"
-              style={{ minHeight: "500px" }}
             />
           </div>
         </DialogContent>

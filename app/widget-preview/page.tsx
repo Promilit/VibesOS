@@ -1,17 +1,49 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Lightbulb, Bug, Map, ChevronUp, MessageSquare } from "lucide-react";
+import Image from "next/image";
 
 // Board type display configuration
 const BOARD_CONFIG: Record<string, { name: string; icon: React.ComponentType<{ className?: string }> }> = {
   "feature-requests": { name: "Feature Requests", icon: Lightbulb },
   "bug-reports": { name: "Bug Reports", icon: Bug },
   "internal-roadmap": { name: "Internal Roadmap", icon: Map },
+};
+
+// Default customization values
+const DEFAULTS = {
+  colors: {
+    light: {
+      primary: "#3b82f6",
+      secondary: "#64748b",
+      background: "#ffffff",
+      cardBackground: "#f8fafc",
+      text: "#0f172a",
+      border: "#e2e8f0",
+    },
+    dark: {
+      primary: "#60a5fa",
+      secondary: "#94a3b8",
+      background: "#0f172a",
+      cardBackground: "#1e293b",
+      text: "#f8fafc",
+      border: "#334155",
+    },
+  },
+  typography: {
+    fontFamily: "system-ui, -apple-system, sans-serif",
+    headingFontFamily: "system-ui, -apple-system, sans-serif",
+    fontSize: "14px",
+  },
+  layout: {
+    borderRadius: "8px",
+    spacing: "16px",
+  },
 };
 
 function WidgetPreviewContent() {
@@ -28,13 +60,69 @@ function WidgetPreviewContent() {
     projectId ? { projectId } : "skip"
   );
 
+  // Fetch project customization
+  const customization = useQuery(
+    api.projects.admin.queries.getCustomization,
+    projectId ? { projectId } : "skip"
+  );
+
   // Track auth errors
   useEffect(() => {
-    // If query returns null (not undefined which means loading), check for auth issues
     if (projectBoards === null) {
       setAuthError("Unable to load project data. Please ensure you're logged in.");
     }
   }, [projectBoards]);
+
+  const isDark = theme === "dark";
+
+  // Compute all styles based on customization
+  const styles = useMemo(() => {
+    const colorDefaults = isDark ? DEFAULTS.colors.dark : DEFAULTS.colors.light;
+
+    // Colors
+    const colors = customization ? {
+      primary: isDark
+        ? (customization.darkPrimaryColor || customization.primaryColor || colorDefaults.primary)
+        : (customization.primaryColor || colorDefaults.primary),
+      secondary: isDark
+        ? (customization.darkSecondaryColor || customization.secondaryColor || colorDefaults.secondary)
+        : (customization.secondaryColor || colorDefaults.secondary),
+      background: isDark
+        ? (customization.darkBackgroundColor || colorDefaults.background)
+        : (customization.backgroundColor || colorDefaults.background),
+      cardBackground: isDark
+        ? (customization.darkCardBackgroundColor || colorDefaults.cardBackground)
+        : (customization.cardBackgroundColor || colorDefaults.cardBackground),
+      text: isDark
+        ? (customization.darkTextColor || colorDefaults.text)
+        : (customization.textColor || colorDefaults.text),
+      border: isDark
+        ? (customization.darkBorderColor || colorDefaults.border)
+        : (customization.borderColor || colorDefaults.border),
+    } : colorDefaults;
+
+    // Typography
+    const typography = {
+      fontFamily: customization?.fontFamily || DEFAULTS.typography.fontFamily,
+      headingFontFamily: customization?.headingFontFamily || customization?.fontFamily || DEFAULTS.typography.headingFontFamily,
+      fontSize: customization?.fontSize || DEFAULTS.typography.fontSize,
+    };
+
+    // Layout
+    const layout = {
+      borderRadius: customization?.borderRadius || DEFAULTS.layout.borderRadius,
+      spacing: customization?.spacing || DEFAULTS.layout.spacing,
+    };
+
+    // Branding
+    const branding = {
+      logoUrl: customization?.logoUrl || null,
+      companyName: customization?.companyName || null,
+      widgetTitle: customization?.widgetTitle || null,
+    };
+
+    return { colors, typography, layout, branding };
+  }, [customization, isDark]);
 
   // Determine effective board ID
   const effectiveBoardId = selectedBoardId || (projectBoards && projectBoards.length > 0 ? projectBoards[0]._id : null);
@@ -47,8 +135,6 @@ function WidgetPreviewContent() {
       : "skip"
   );
 
-  const isDark = theme === "dark";
-
   // Loading state - show for max 5 seconds then show helpful message
   const [loadingTooLong, setLoadingTooLong] = useState(false);
   useEffect(() => {
@@ -58,12 +144,26 @@ function WidgetPreviewContent() {
     }
   }, [projectBoards]);
 
+  // Base container style
+  const containerStyle: React.CSSProperties = {
+    backgroundColor: styles.colors.background,
+    color: styles.colors.text,
+    fontFamily: styles.typography.fontFamily,
+    fontSize: styles.typography.fontSize,
+  };
+
   if (projectBoards === undefined) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center ${isDark ? "bg-gray-900" : "bg-white"}`}>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center"
+        style={containerStyle}
+      >
+        <div
+          className="animate-spin rounded-full h-8 w-8 border-b-2 mb-4"
+          style={{ borderColor: styles.colors.primary }}
+        />
         {loadingTooLong && (
-          <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+          <p className="text-sm" style={{ color: styles.colors.secondary }}>
             Loading preview... Make sure you&apos;re logged in.
           </p>
         )}
@@ -71,35 +171,32 @@ function WidgetPreviewContent() {
     );
   }
 
-  // Auth error state
   if (authError) {
     return (
-      <div className={`min-h-screen p-4 flex items-center justify-center ${isDark ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}>
+      <div className="min-h-screen p-4 flex items-center justify-center" style={containerStyle}>
         <div className="text-center">
           <p className="text-amber-500 mb-2">Authentication Required</p>
-          <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>{authError}</p>
+          <p className="text-sm" style={{ color: styles.colors.secondary }}>{authError}</p>
         </div>
       </div>
     );
   }
 
-  // No project ID
   if (!projectId) {
     return (
-      <div className={`min-h-screen p-4 flex items-center justify-center ${isDark ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}>
+      <div className="min-h-screen p-4 flex items-center justify-center" style={containerStyle}>
         <div className="text-center">
-          <p className="text-muted-foreground">No project ID specified</p>
+          <p style={{ color: styles.colors.secondary }}>No project ID specified</p>
         </div>
       </div>
     );
   }
 
-  // No boards
   if (!projectBoards || projectBoards.length === 0) {
     return (
-      <div className={`min-h-screen p-4 flex items-center justify-center ${isDark ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}>
+      <div className="min-h-screen p-4 flex items-center justify-center" style={containerStyle}>
         <div className="text-center">
-          <p className="text-muted-foreground">No boards configured for this project</p>
+          <p style={{ color: styles.colors.secondary }}>No boards configured for this project</p>
         </div>
       </div>
     );
@@ -109,12 +206,62 @@ function WidgetPreviewContent() {
   const itemsByColumn = boardData?.itemsByColumn || {};
 
   return (
-    <div className={`min-h-screen p-4 ${isDark ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}>
-      <div className="max-w-6xl mx-auto">
-        <div className={`border rounded-lg p-4 shadow-sm ${isDark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}>
+    <div className="min-h-screen w-full p-2 overflow-auto" style={containerStyle}>
+      <div
+        className="border shadow-sm w-full"
+        style={{
+          borderColor: styles.colors.border,
+          backgroundColor: styles.colors.cardBackground,
+          borderRadius: styles.layout.borderRadius,
+          padding: styles.layout.spacing,
+        }}
+      >
+          {/* Header with Branding */}
+          {(styles.branding.logoUrl || styles.branding.companyName || styles.branding.widgetTitle) && (
+            <div
+              className="mb-4 pb-4 border-b flex items-center gap-3"
+              style={{ borderColor: styles.colors.border }}
+            >
+              {styles.branding.logoUrl && (
+                <Image
+                  src={styles.branding.logoUrl}
+                  alt={styles.branding.companyName || "Logo"}
+                  width={40}
+                  height={40}
+                  className="object-contain"
+                  style={{ borderRadius: `calc(${styles.layout.borderRadius} / 2)` }}
+                />
+              )}
+              <div>
+                {styles.branding.companyName && (
+                  <div
+                    className="font-semibold"
+                    style={{
+                      fontFamily: styles.typography.headingFontFamily,
+                      color: styles.colors.text
+                    }}
+                  >
+                    {styles.branding.companyName}
+                  </div>
+                )}
+                {styles.branding.widgetTitle && (
+                  <div
+                    className="text-sm"
+                    style={{ color: styles.colors.secondary }}
+                  >
+                    {styles.branding.widgetTitle}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Board Tabs */}
-          <div className={`border-b mb-4 ${isDark ? "border-gray-700" : "border-gray-200"}`}>
-            <div className="flex gap-1">
+          <div
+            className="border-b mb-4"
+            style={{ borderColor: styles.colors.border }}
+          >
+            <div className="flex gap-1 overflow-x-auto">
               {projectBoards.map((board: any) => {
                 const config = BOARD_CONFIG[board.boardType];
                 const Icon = config?.icon || Lightbulb;
@@ -123,15 +270,12 @@ function WidgetPreviewContent() {
                   <button
                     key={board._id}
                     onClick={() => setSelectedBoardId(board._id)}
-                    className={`px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors border-b-2 ${
-                      isSelected
-                        ? isDark
-                          ? "border-blue-400 text-blue-400"
-                          : "border-blue-500 text-blue-600"
-                        : isDark
-                        ? "border-transparent text-gray-400 hover:text-gray-200"
-                        : "border-transparent text-gray-500 hover:text-gray-700"
-                    }`}
+                    className="px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors border-b-2 whitespace-nowrap"
+                    style={{
+                      borderColor: isSelected ? styles.colors.primary : "transparent",
+                      color: isSelected ? styles.colors.primary : styles.colors.secondary,
+                      fontFamily: styles.typography.fontFamily,
+                    }}
                   >
                     <Icon className="h-4 w-4" />
                     {config?.name || board.name}
@@ -143,53 +287,100 @@ function WidgetPreviewContent() {
 
           {/* Loading board data */}
           {boardData === undefined ? (
-            <div className="flex items-center justify-center min-h-[300px]">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div
+                className="animate-spin rounded-full h-6 w-6 border-b-2"
+                style={{ borderColor: styles.colors.primary }}
+              />
             </div>
           ) : columns.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12" style={{ color: styles.colors.secondary }}>
               No columns found for this board
             </div>
           ) : (
             /* Columns Grid */
-            <div className="grid grid-cols-4 gap-4">
+            <div
+              className="grid gap-4 overflow-x-auto"
+              style={{
+                gridTemplateColumns: `repeat(${Math.min(columns.length, 4)}, minmax(220px, 1fr))`,
+                gap: styles.layout.spacing,
+              }}
+            >
               {columns.map((column: any) => {
                 const items = itemsByColumn[column._id] || [];
                 return (
                   <div
                     key={column._id}
-                    className={`rounded-lg p-3 min-h-[300px] ${isDark ? "bg-gray-700/50" : "bg-gray-50"}`}
+                    className="p-3 min-h-[250px]"
+                    style={{
+                      backgroundColor: styles.colors.background,
+                      borderRadius: styles.layout.borderRadius,
+                    }}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-medium text-sm">{column.name}</h3>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${isDark ? "bg-gray-600 text-gray-300" : "bg-gray-200 text-gray-600"}`}>
+                      <h3
+                        className="font-medium"
+                        style={{ fontFamily: styles.typography.headingFontFamily }}
+                      >
+                        {column.name}
+                      </h3>
+                      <span
+                        className="text-xs px-2 py-0.5"
+                        style={{
+                          backgroundColor: styles.colors.border,
+                          color: styles.colors.secondary,
+                          borderRadius: `calc(${styles.layout.borderRadius} / 2)`,
+                        }}
+                      >
                         {items.length}
                       </span>
                     </div>
-                    <div className="space-y-2">
+                    <div
+                      className="space-y-2"
+                      style={{ gap: `calc(${styles.layout.spacing} / 2)` }}
+                    >
                       {items.length === 0 ? (
-                        <p className={`text-xs text-center py-4 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                        <p className="text-xs text-center py-4" style={{ color: styles.colors.secondary }}>
                           No items
                         </p>
                       ) : (
                         items.map((item: any) => (
                           <div
                             key={item._id}
-                            className={`p-3 rounded border shadow-sm ${isDark ? "bg-gray-800 border-gray-600" : "bg-white border-gray-200"}`}
+                            className="p-3 border shadow-sm"
+                            style={{
+                              backgroundColor: styles.colors.cardBackground,
+                              borderColor: styles.colors.border,
+                              borderRadius: styles.layout.borderRadius,
+                            }}
                           >
-                            <div className="font-medium text-sm">{item.title}</div>
+                            <div
+                              className="font-medium"
+                              style={{ fontFamily: styles.typography.headingFontFamily }}
+                            >
+                              {item.title}
+                            </div>
                             {item.description && (
-                              <div className={`text-xs mt-1 line-clamp-2 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                              <div
+                                className="text-sm mt-1 line-clamp-2"
+                                style={{ color: styles.colors.secondary }}
+                              >
                                 {item.description}
                               </div>
                             )}
-                            <div className={`flex items-center gap-3 mt-2 text-xs ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                              <span className="flex items-center gap-1">
-                                <ChevronUp className="h-3 w-3" />
+                            <div
+                              className="flex items-center gap-3 mt-2 text-sm"
+                              style={{ color: styles.colors.secondary }}
+                            >
+                              <span
+                                className="flex items-center gap-1"
+                                style={{ color: styles.colors.primary }}
+                              >
+                                <ChevronUp className="h-4 w-4" />
                                 {item.voteCount || 0}
                               </span>
                               <span className="flex items-center gap-1">
-                                <MessageSquare className="h-3 w-3" />
+                                <MessageSquare className="h-4 w-4" />
                                 {item.commentCount || 0}
                               </span>
                             </div>
@@ -203,11 +394,22 @@ function WidgetPreviewContent() {
             </div>
           )}
 
-          <div className={`mt-4 text-center text-xs ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-            Widget Preview - Powered by UserVibes
-          </div>
+        {/* Footer */}
+        <div
+          className="mt-4 text-center text-xs"
+          style={{ color: styles.colors.secondary }}
+        >
+          {styles.branding.companyName
+            ? `Powered by ${styles.branding.companyName}`
+            : "Widget Preview - Powered by UserVibes"
+          }
         </div>
       </div>
+
+      {/* Custom CSS injection */}
+      {customization?.customCss && (
+        <style dangerouslySetInnerHTML={{ __html: customization.customCss }} />
+      )}
     </div>
   );
 }
